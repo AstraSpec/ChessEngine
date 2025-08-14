@@ -1,0 +1,26 @@
+{
+  "name": "chessengine",
+  "version": "1.0.0",
+  "description": "1. Navigate to the folder in cmd\r 2. Run npm install\r 3. Run npm init -y\r 4. Run npm start\r 5. Open http://localhost:3000/ in your browser",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.18.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AstraSpec/ChessEngine.git"
+  },
+  "keywords": [],
+  "author": "AstraSpec",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AstraSpec/ChessEngine/issues"
+  },
+  "homepage": "https://github.com/AstraSpec/ChessEngine#readme"
+}
