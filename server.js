@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const WebSocket = require("ws");
 const path = require("path");
+const Player = require("./Player.js");
 
 const app = express();
 
@@ -21,24 +22,164 @@ const port = 3000;
 
 const wss = new WebSocket.Server({ noServer: true });
 
-// ======================================================================================
-// Handles websocket seperate from AI games
+let players = [null, null];
+let gameState = {
+    isRunning: false,
+    currentTurn: 1,
+    board: null,
+    startTime: null
+};
 
-// Starts multiplayer game
+// ======================================================================================
+// Handles websocket
+
+// Starts game (singleplayer or multiplayer)
 wss.on("connection", (ws, req) => {
     console.log("WebSocket Connected!");
 
-    // Handles multiplayer moves
-    ws.on('message', (message) => {
-        const data = JSON.parse(message);
+    let gameMode = "MULTIPLAYER";
+    
+    // First player joins
+    if (players[0] === null) {
+        players[0] = new Player(0, 'human', ws);
+        console.log("Player 1 (Human) joined");
+        
+        // For singleplayer, create a bot as player 2
+        if (gameMode === "SINGLEPLAYER") {
+            //TODO
+            console.log("Bot (Player 2) created");
+        }
+    
+    // Second player joins (multiplayer game)
+    } else if (players[1] === null) {
+        // Second human player joins (multiplayer)
+        players[1] = new Player(2, 'human', 'O', ws);
+        console.log("Player 2 (Human) joined");
+    }
 
+    // Start game if we have enough players
+    if (players[0] && players[1]) {
+        startGame();
+    }
+
+    // Handle messages from human players
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            handlePlayerMessage(ws, data);
+        } catch (error) {
+            console.error('Message parsing error:', error);
+        }
     });
 
     // Handles disconnections
     ws.on("close", () => {
         console.log("WebSocket Disconnected!");
+        handlePlayerDisconnect(ws);
     });
 });
+
+// Handles different types of player messages
+function handlePlayerMessage(ws, data) {
+    switch (data.type) {
+        case 'move':
+            handlePlayerMove(ws, data);
+            break;
+        case 'reset':
+            handleGameReset();
+            break;
+        default:
+            console.log('Unknown message type:', data.type);
+    }
+}
+
+// Handles player moves
+function handlePlayerMove(ws, data) {
+    // Find which player sent this move
+    let playerIndex = -1;
+    for (let i = 0; i < players.length; i++) {
+        if (players[i] && players[i].ws === ws) {
+            playerIndex = i;
+            break;
+        }
+    }
+
+    if (playerIndex === -1 || playerIndex !== gameState.currentTurn - 1) {
+        return; // Not your turn
+    }
+
+    // Process the move
+    console.log(`Player ${playerIndex} made move:`, data);
+    
+    // Update game state
+    gameState.currentTurn = gameState.currentTurn === 1 ? 2 : 1;
+    
+    // Notify all players of the move
+    notifyAllPlayers({
+        type: 'move',
+        player: playerIndex + 1,
+        move: data.move,
+        nextTurn: gameState.currentTurn
+    });
+}
+
+// Handle game reset
+function handleGameReset() {
+    gameState.isRunning = false;
+    gameState.currentTurn = 1;
+    gameState.startTime = null;
+    
+    // Reset player scores
+    if (players[0]) players[0].score = 0;
+    if (players[1]) players[1].score = 0;
+    
+    notifyAllPlayers({
+        type: 'reset'
+    });
+    
+    console.log("Game reset");
+}
+
+// Handle player disconnection
+function handlePlayerDisconnect(ws) {
+    for (let i = 0; i < players.length; i++) {
+        if (players[i] && players[i].ws === ws) {
+            players[i].disconnect();
+            players[i] = null;
+            console.log(`Player ${i + 1} disconnected`);
+            break;
+        }
+    }
+    
+    // If both players disconnected, reset game
+    if (!players[0] && !players[1]) {
+        gameState.isRunning = false;
+        console.log("All players disconnected, game ended");
+    }
+}
+
+// Start the game
+function startGame() {
+    gameState.isRunning = true;
+    gameState.startTime = Date.now();
+    gameState.currentTurn = 1;
+    
+    console.log("Game started!");
+    
+    // Notify all players that game has begun
+    notifyAllPlayers({
+        type: 'start',
+    });
+}
+
+// Notify all connected players
+function notifyAllPlayers(message) {
+    for (let i = 0; i < players.length; i++) {
+        if (players[i] && players[i].isReady()) {
+            players[i].send(message);
+        }
+    }
+}
 
 //Listen on specified port and ip
 const server = app.listen(port, hostname, () => {

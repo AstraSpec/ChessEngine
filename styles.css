@@ -25,30 +25,36 @@ body {
     display: grid;
     justify-content: center;
     align-items: center;
-    grid-template-columns: repeat(3, 0fr);
-    grid-template-rows: repeat(3, 0fr);
+    grid-template-columns: repeat(8, 0fr);
+    grid-template-rows: repeat(8, 0fr);
     gap: 2px;
+    margin: 20px auto;
 }
 
 .square {
     display: flex;
-    width: 100px;
-    height: 100px;
-    background-color: #ffffff;
-    border: 2px solid #dfdfdf;
-    border-radius: 2px;
+    width: 60px;
+    height: 60px;
+    border: 1px solid #cccccc;
     cursor: pointer;
-    transition: background-color 0.25s ease-in-out;
+    transition: background-color 0.1s ease-in-out;
 
     justify-content: center;
     align-items: center;
-    font-size: 48px;
-    font-style: bold;
-    color: #999999;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.light-square {
+    background-color: #eed4aa;
+}
+
+.dark-square {
+    background-color: #bd8d66;
 }
 
 .square:hover {
-    background-color: #f0f0f0;
+    background-color: #fff7eb;
 }
 
 #reset {
@@ -92,18 +98,19 @@ body {
 }
 
 .nav-button:hover {
-    background-color: #449ce4;
+    background-color: #c08b3b;
 }
 
 @media (max-width: 768px) {
     .board {
         max-width: 90vw;
+        gap: 1px;
     }
 
     .square {
-        width: 16vw;
-        height: 16vw;
-        font-size: 32px;
+        width: 10vw;
+        height: 10vw;
+        font-size: 20px;
     }
 
     .nav-button {
@@ -128,12 +135,13 @@ body {
 @media (max-width: 500px) {
     .board {
         max-width: 80vw;
+        gap: 1px;
     }
 
     .square {
-        width: 15vw;
-        height: 15vw;
-        font-size: 24px;
+        width: 9vw;
+        height: 9vw;
+        font-size: 16px;
     }
     
     .nav-button {

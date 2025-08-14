@@ -1,8 +1,11 @@
 // Client side
 
 let ws = null;
+let currentPlayer = 1;
+let running = false;
+let gamemode = "SINGLEPLAYER";
 
-// Initialize multiplayer websocket
+// Initializes multiplayer websocket
 function wsOpen() {
     if (ws) {
         ws.onerror = ws.onopen = ws.onclose = null;
@@ -15,11 +18,11 @@ function wsOpen() {
             
             switch(data.type) {
                 case 'start':
-                    symbol = data.symbol;
                     updateStatus(`Player ${currentPlayer}'s turn`);
                     running = true;
                     break;
             }
+            
         } catch (error) {
             console.error('Message error: ', error);
             updateStatus('Message error');
@@ -44,13 +47,42 @@ function wsOpen() {
     };
 }
 
-// Function to initialize the starting values
+// Creates the chess board dynamically
+function createChessBoard() {
+    const board = document.querySelector('.board');
+    board.innerHTML = '';
+    
+    // Create 8x8 chess board (64 squares)
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const square = document.createElement('button');
+            square.className = 'square';
+            square.id = `${row}-${col}`;
+            square.setAttribute('role', 'button');
+            square.setAttribute('aria-label', `Square ${row}-${col}`);
+            
+            // Add alternating colors for chess board pattern
+            if ((row + col) % 2 === 0) {
+                square.classList.add('light-square');
+            } else {
+                square.classList.add('dark-square');
+            }
+            
+            board.appendChild(square);
+        }
+    }
+}
+
+// Initializes starting values
 function startGame() {
+    updateStatus("Connecting to server...");
     wsOpen();
 }
 
-// Initialize game after fully loaded
+// Initializes game after fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    createChessBoard();
+
     // Adds event listeners to squares
     const squares = document.getElementsByClassName("square");
     for (let i = 0; i < squares.length; i++) {
@@ -66,12 +98,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Click event for squares
 function onClick(event) {
+    if (!running) return;
     
+    const square = event.target;
+    const squareId = square.id;
+    
+    console.log(`Square clicked: ${squareId}`);
 }
 
-// Resets gams
+// Resets game
 function resetButton() {
-    ws.send(JSON.stringify({
-        type: 'reset'
-    }));
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: 'reset'
+        }));
+    }
+    
+    // Reset local game state
+    running = true;
+    updateStatus("Game reset. Player 1's turn");
+}
+
+// Updates status message
+function updateStatus(message) {
+    const statusElement = document.getElementById('status');
+    if (statusElement) {
+        statusElement.textContent = message;
+    }
 }
