@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Engine</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="nav-bar" aria-label="Game Modes">
+        <button class="nav-button" id="Singleplayer">Singleplayer</button>
+        <button class="nav-button" id="Multiplayer">Multiplayer</button>
+    </nav>
+    <div class="game-container">
+        <h1 id="title">Chess Engine</h1>
+        <p class="desc">Chess is a classic game of strategy played on a 8x8 grid. The goal
+            is to win against your opponent by blocking their kings escape</p>
+        <div class="board" aria-label="Game Board" aria-rowcount="3" aria-colcount="3">
+            <button class="square" id="0" role="button"></button>
+        </div>
+
+        <div class="game-info">
+            <p class="desc" id="status" aria-live="polite">Player X's turn</p>
+            <div id="scores" class="scores" aria-label="Scores" aria-live="polite">
+                <h2 id="results">X - 0, O - 0</h2>
+                <pre id="scores-list"></pre>
+            </div>
+        </div>
+
+        <button id="reset" aria-label="Reset">Reset Game</button>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>
