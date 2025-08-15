@@ -21,6 +21,10 @@ function wsOpen() {
                     updateStatus(`Player ${currentPlayer}'s turn`);
                     running = true;
                     break;
+                case 'board':
+                    console.log("FDF");
+                    updateBoard(data.board);
+                    break;
             }
             
         } catch (error) {
@@ -48,21 +52,19 @@ function wsOpen() {
 }
 
 // Creates the chess board dynamically
-function createChessBoard() {
+function createBoard() {
     const board = document.querySelector('.board');
     board.innerHTML = '';
     
     // Create 8x8 chess board (64 squares)
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
+    for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
             const square = document.createElement('button');
             square.className = 'square';
-            square.id = `${row}-${col}`;
-            square.setAttribute('role', 'button');
-            square.setAttribute('aria-label', `Square ${row}-${col}`);
+            square.id = `${y}-${x}`;
             
             // Add alternating colors for chess board pattern
-            if ((row + col) % 2 === 0) {
+            if ((y + x) % 2 === 0) {
                 square.classList.add('light-square');
             } else {
                 square.classList.add('dark-square');
@@ -73,6 +75,32 @@ function createChessBoard() {
     }
 }
 
+// Shows the pieces on the board
+function updateBoard(board) {
+    for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+            let square = document.getElementById(y + '-' + x);
+            let piece = board[y][x];
+            updateSquare(square, piece);
+        }
+    }
+}
+
+function updateSquare(square, piece) {
+    if (piece == null) return;
+    
+    const icon = document.createElement('i');
+    icon.classList.add('fa-solid', piece.icon);
+
+    if (piece.team === 1) {
+        icon.classList.add('team-white');
+    } else {
+        icon.classList.add('team-black');
+    }
+
+    square.appendChild(icon);
+}
+
 // Initializes starting values
 function startGame() {
     updateStatus("Connecting to server...");
@@ -81,7 +109,7 @@ function startGame() {
 
 // Initializes game after fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    createChessBoard();
+    createBoard();
 
     // Adds event listeners to squares
     const squares = document.getElementsByClassName("square");

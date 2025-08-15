@@ -7,6 +7,7 @@ const cors = require("cors");
 const WebSocket = require("ws");
 const path = require("path");
 const Player = require("./Player.js");
+const Piece = require("./Piece.js");
 
 const app = express();
 
@@ -22,6 +23,9 @@ const port = 3000;
 
 const wss = new WebSocket.Server({ noServer: true });
 
+const BOARD_SIZE = 8;
+
+let board = [];
 let players = [null, null];
 let gameState = {
     isRunning: false,
@@ -43,10 +47,12 @@ wss.on("connection", (ws, req) => {
     if (players[0] === null) {
         players[0] = new Player(0, 'human', ws);
         console.log("Player 1 (Human) joined");
+
+        setupBoard();
+        sendBoard(ws);
         
         // For singleplayer, create a bot as player 2
         if (gameMode === "SINGLEPLAYER") {
-            //TODO
             console.log("Bot (Player 2) created");
         }
     
@@ -78,6 +84,55 @@ wss.on("connection", (ws, req) => {
         handlePlayerDisconnect(ws);
     });
 });
+
+function setupBoard() {
+    let strBoard = [
+    'rkbKQbkr',
+    'pppppppp',
+    '        ',
+    '        ',
+    '        ',
+    '        ',
+    'pppppppp',
+    'rkbKQbkr'
+    ];
+
+    for (let y = 0; y < BOARD_SIZE; y++) {
+        board[y] = [];
+        for (let x = 0; x < BOARD_SIZE; x++) {
+            board[y].push(getPiece(x, y, strBoard[y][x]));
+        }
+    }
+}
+
+function getPiece(x, y, str) {
+    let team = y > 3 ? 1 : 2;
+    switch(str) {
+        case ' ':
+            return null;
+        case 'p':
+            return new Piece(x, y, 'pawn', team, 'fa-chess-pawn');
+        case 'r':
+            return new Piece(x, y, 'rook', team, 'fa-chess-rook');
+        case 'k':
+            return new Piece(x, y, 'knight', team, 'fa-chess-knight');
+        case 'b':
+            return new Piece(x, y, 'bishop', team, 'fa-chess-bishop');
+        case 'K':
+            return new Piece(x, y, 'king', team, 'fa-chess-king');
+        case 'Q':
+            return new Piece(x, y, 'queen', team, 'fa-chess-queen');
+        default:
+            return null;
+    };
+}
+
+function sendBoard(player) {
+    player.send(JSON.stringify({
+        type: 'board',
+        board: board
+    }));
+}
 
 // Handles different types of player messages
 function handlePlayerMessage(ws, data) {

@@ -162,3 +162,12 @@ body {
     }
 }
 
+.team-white {
+    color: #ffffff;
+    text-shadow: #000000 0 0 10px;
+}
+
+.team-black {
+    color: #000000;
+    text-shadow: rgb(255, 255, 255) 0 0 10px;
+}
