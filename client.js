@@ -3,7 +3,10 @@
 let ws = null;
 let currentPlayer = 1;
 let running = false;
-let gamemode = "SINGLEPLAYER";
+let gamemode = "MULTIPLAYER";
+
+let boardLocal = null;
+let selectedPiece = null;
 
 // Initializes multiplayer websocket
 function wsOpen() {
@@ -22,8 +25,11 @@ function wsOpen() {
                     running = true;
                     break;
                 case 'board':
-                    console.log("FDF");
                     updateBoard(data.board);
+                    break;
+                case 'move':
+                    updateStatus(`Player ${data.player} made a move. Player ${data.nextTurn}'s turn`);
+                    currentPlayer = data.nextTurn;
                     break;
             }
             
@@ -84,9 +90,13 @@ function updateBoard(board) {
             updateSquare(square, piece);
         }
     }
+
+    boardLocal = board;
 }
 
 function updateSquare(square, piece) {
+    square.innerHTML = '';
+    
     if (piece == null) return;
     
     const icon = document.createElement('i');
@@ -128,10 +138,46 @@ document.addEventListener('DOMContentLoaded', function() {
 function onClick(event) {
     if (!running) return;
     
-    const square = event.target;
-    const squareId = square.id;
-    
-    console.log(`Square clicked: ${squareId}`);
+    let square = event.target;
+    if (square.tagName === 'I') {
+        square = square.parentElement;
+    }
+
+    let x = parseInt(square.id.split('-')[1]);
+    let y = parseInt(square.id.split('-')[0]);
+
+    if (selectedPiece === null && boardLocal[y][x] && boardLocal[y][x].team === currentPlayer) {
+        selectedPiece = boardLocal[y][x];
+        // Highlight selected square
+        square.style.backgroundColor = '#ffff00';
+        updateStatus(`Selected ${selectedPiece.type} at (${x}, ${y})`);
+    }
+    else if (selectedPiece !== null) {
+        // Check if moving to the same square
+        if (selectedPiece.x === x && selectedPiece.y === y) {
+            updateStatus("Cannot move to the same square!");
+            return;
+        }
+        
+        ws.send(JSON.stringify({
+            type: 'move',
+            move: {
+                fromX: selectedPiece.x,
+                fromY: selectedPiece.y,
+                toX: x,
+                toY: y,
+                piece: selectedPiece.type
+            }
+        }));
+        
+        // Clear selection highlighting
+        const squares = document.getElementsByClassName("square");
+        for (let i = 0; i < squares.length; i++) {
+            squares[i].style.backgroundColor = '';
+        }
+        
+        selectedPiece = null;
+    }
 }
 
 // Resets game

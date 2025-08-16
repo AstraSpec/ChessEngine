@@ -42,14 +42,14 @@ wss.on("connection", (ws, req) => {
     console.log("WebSocket Connected!");
 
     let gameMode = "MULTIPLAYER";
+
+    setupBoard();
+    sendBoard(ws);
     
     // First player joins
     if (players[0] === null) {
         players[0] = new Player(0, 'human', ws);
         console.log("Player 1 (Human) joined");
-
-        setupBoard();
-        sendBoard(ws);
         
         // For singleplayer, create a bot as player 2
         if (gameMode === "SINGLEPLAYER") {
@@ -59,7 +59,7 @@ wss.on("connection", (ws, req) => {
     // Second player joins (multiplayer game)
     } else if (players[1] === null) {
         // Second human player joins (multiplayer)
-        players[1] = new Player(2, 'human', 'O', ws);
+        players[1] = new Player(2, 'human', ws);
         console.log("Player 2 (Human) joined");
     }
 
@@ -166,8 +166,26 @@ function handlePlayerMove(ws, data) {
     // Process the move
     console.log(`Player ${playerIndex} made move:`, data);
     
+    // Extract move coordinates
+    const { fromX, fromY, toX, toY, piece } = data.move;
+    
+    // Execute the move
+    board[toY][toX] = board[fromY][fromX];
+    board[fromY][fromX] = null;
+    
+    // Update piece coordinates
+    board[toY][toX].x = toX;
+    board[toY][toX].y = toY;
+    
     // Update game state
     gameState.currentTurn = gameState.currentTurn === 1 ? 2 : 1;
+    
+    // Send updated board to all players
+    for (let i = 0; i < players.length; i++) {
+        if (players[i] && players[i].isReady()) {
+            sendBoard(players[i].ws);
+        }
+    }
     
     // Notify all players of the move
     notifyAllPlayers({
