@@ -1,12 +1,14 @@
 // Client side
 
 let ws = null;
-let currentPlayer = 1;
+let team = 1;
+let turn = 1;
 let running = false;
 let gamemode = "MULTIPLAYER";
 
 let boardLocal = null;
 let selectedPiece = null;
+let validMoves = [];
 
 // Initializes multiplayer websocket
 function wsOpen() {
@@ -20,16 +22,25 @@ function wsOpen() {
             const data = JSON.parse(event.data);
             
             switch(data.type) {
+                case 'team_assignment':
+                    team = data.team;
+                    console.log(`Assigned to team ${team} (${team === 1 ? 'White' : 'Black'})`);
+                    updateStatus(`You are on team ${team === 1 ? 'White' : 'Black'}`);
+                    updateTeamDisplay();
+                    break;
                 case 'start':
-                    updateStatus(`Player ${currentPlayer}'s turn`);
+                    console.log(`Game started! Team: ${team}, Turn: ${turn}`);
+                    updateStatus(`Game started! You are team ${team === 1 ? 'White' : 'Black'}. Player ${turn}'s turn`);
                     running = true;
+                    updateTurnDisplay();
                     break;
                 case 'board':
                     updateBoard(data.board);
                     break;
                 case 'move':
                     updateStatus(`Player ${data.player} made a move. Player ${data.nextTurn}'s turn`);
-                    currentPlayer = data.nextTurn;
+                    turn = data.nextTurn;
+                    updateTurnDisplay();
                     break;
             }
             
@@ -107,7 +118,7 @@ function updateSquare(square, piece) {
     } else {
         icon.classList.add('team-black');
     }
-
+    
     square.appendChild(icon);
 }
 
@@ -131,6 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetBtn = document.getElementById("reset");
     resetBtn.addEventListener("click", resetButton);
     
+    // Initialize team and turn displays
+    updateTeamDisplay();
+    updateTurnDisplay();
+    
     startGame();
 });
 
@@ -146,16 +161,39 @@ function onClick(event) {
     let x = parseInt(square.id.split('-')[1]);
     let y = parseInt(square.id.split('-')[0]);
 
-    if (selectedPiece === null && boardLocal[y][x] && boardLocal[y][x].team === currentPlayer) {
-        selectedPiece = boardLocal[y][x];
-        // Highlight selected square
-        square.style.backgroundColor = '#ffff00';
-        updateStatus(`Selected ${selectedPiece.type} at (${x}, ${y})`);
+    if (turn !== team) {
+        updateStatus("It's not your turn!");
+        return;
+    }
+
+    const clickedPiece = boardLocal[y][x];
+
+    if (selectedPiece === null && clickedPiece && clickedPiece.team === team) {
+        selectPiece(clickedPiece, square);
     }
     else if (selectedPiece !== null) {
+        // Check if clicked on your teams piece
+        if (clickedPiece !== null && selectedPiece.team === clickedPiece.team) {
+            selectPiece(clickedPiece, square);
+            return;
+        }
+        
         // Check if moving to the same square
         if (selectedPiece.x === x && selectedPiece.y === y) {
             updateStatus("Cannot move to the same square!");
+            return;
+        }
+
+        // Check if the destination is a valid move
+        let isValidMove = false;
+        validMoves.forEach(move => {
+            if (move.x === x && move.y === y) {
+                isValidMove = true;
+            }
+        });
+        
+        if (!isValidMove) {
+            updateStatus("Invalid move! Please select a valid destination.");
             return;
         }
         
@@ -170,13 +208,10 @@ function onClick(event) {
             }
         }));
         
-        // Clear selection highlighting
-        const squares = document.getElementsByClassName("square");
-        for (let i = 0; i < squares.length; i++) {
-            squares[i].style.backgroundColor = '';
-        }
+        clearHighlighting();
         
         selectedPiece = null;
+        validMoves = [];
     }
 }
 
@@ -198,5 +233,97 @@ function updateStatus(message) {
     const statusElement = document.getElementById('status');
     if (statusElement) {
         statusElement.textContent = message;
+    }
+}
+
+// Updates team display
+function updateTeamDisplay() {
+    const teamElement = document.getElementById('team-display');
+    if (teamElement) {
+        teamElement.textContent = `Your Team: ${team === 1 ? 'White' : 'Black'}`;
+        teamElement.className = `team-display team-${team === 1 ? 'white' : 'black'}`;
+    }
+}
+
+// Updates turn display
+function updateTurnDisplay() {
+    const turnElement = document.getElementById('turn-display');
+    if (turnElement) {
+        turnElement.textContent = `Current Turn: ${turn === 1 ? 'White' : 'Black'}`;
+        turnElement.className = `turn-display turn-${turn === 1 ? 'white' : 'black'}`;
+    }
+}
+
+function getValidMoves(piece) {
+    let validMoves = [];
+
+    let x = piece.x;
+    let y = piece.y;
+    
+    // Pawn
+    if (piece.type === 'pawn') {
+        let direction = piece.team === 1 ? -1 : 1; // White moves up, Black moves down
+        let newY = y + direction;
+        
+        // Check if move is within board bounds
+        if (newY >= 0 && newY < 8) {
+            // Forward move (empty square)
+            if (!boardLocal[newY][x]) {
+                validMoves.push({x: x, y: newY});
+                
+                // Check if it's the first move (can move 2 squares)
+                if ((piece.team === 1 && y === 6) || (piece.team === 2 && y === 1)) {
+                    let doubleY = y + (2 * direction);
+                    if (doubleY >= 0 && doubleY < 8 && !boardLocal[doubleY][x]) {
+                        validMoves.push({x: x, y: doubleY});
+                    }
+                }
+            }
+            
+            // Diagonal captures (enemy pieces)
+            let leftX = x - 1;
+            let rightX = x + 1;
+            
+            // Left diagonal capture
+            if (leftX >= 0 && boardLocal[newY][leftX] && boardLocal[newY][leftX].team !== piece.team) {
+                validMoves.push({x: leftX, y: newY});
+            }
+            
+            // Right diagonal capture
+            if (rightX < 8 && boardLocal[newY][rightX] && boardLocal[newY][rightX].team !== piece.team) {
+                validMoves.push({x: rightX, y: newY});
+            }
+        }
+    }
+    
+    return validMoves;
+}
+
+function selectPiece(piece, square) {
+    selectedPiece = piece;
+
+    clearHighlighting();
+
+    // Highlight selected square
+    square.style.backgroundColor = '#ffff00';
+    updateStatus(`Selected ${selectedPiece.type} at (${piece.x}, ${piece.y})`);
+
+    validMoves = getValidMoves(selectedPiece);
+
+    // Highlight valid moves
+    validMoves.forEach(move => {
+        const moveSquare = document.getElementById(`${move.y}-${move.x}`);
+        if (moveSquare) {
+            moveSquare.classList.add('selected');
+        }
+    });
+}
+
+function clearHighlighting() {
+    // Clear selection highlighting
+    const squares = document.getElementsByClassName("square");
+    for (let i = 0; i < squares.length; i++) {
+        squares[i].style.backgroundColor = '';
+        squares[i].classList.remove('selected');
     }
 }

@@ -162,6 +162,7 @@ body {
     }
 }
 
+/* Chess piece colors */
 .team-white {
     color: #ffffff;
     text-shadow: #000000 0 0 10px;
@@ -170,4 +171,27 @@ body {
 .team-black {
     color: #000000;
     text-shadow: rgb(255, 255, 255) 0 0 10px;
+}
+
+/* Team and Turn Display Styling */
+#team-display {
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+}
+
+#turn-display {
+    font-weight: bold;
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+}
+
+.selected{
+    border: 2px solid #0885eb;
 }

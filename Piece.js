@@ -6,10 +6,6 @@ class Piece {
         this.team = team;
         this.icon = icon;
     }
-
-    validMove(targetCell) {
-        return true;
-    }
 }
 
 module.exports = Piece;

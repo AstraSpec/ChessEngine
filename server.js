@@ -51,6 +51,13 @@ wss.on("connection", (ws, req) => {
         players[0] = new Player(0, 'human', ws);
         console.log("Player 1 (Human) joined");
         
+        // Send team assignment to player 1
+        console.log('Sending team assignment 1 to player');
+        ws.send(JSON.stringify({
+            type: 'team_assignment',
+            team: 1
+        }));
+        
         // For singleplayer, create a bot as player 2
         if (gameMode === "SINGLEPLAYER") {
             console.log("Bot (Player 2) created");
@@ -61,6 +68,13 @@ wss.on("connection", (ws, req) => {
         // Second human player joins (multiplayer)
         players[1] = new Player(2, 'human', ws);
         console.log("Player 2 (Human) joined");
+        
+        // Send team assignment to player 2
+        console.log('Sending team assignment 2 to player');
+        ws.send(JSON.stringify({
+            type: 'team_assignment',
+            team: 2
+        }));
     }
 
     // Start game if we have enough players
