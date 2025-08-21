@@ -295,6 +295,24 @@ function getValidMoves(piece) {
             }
         }
     }
+    if (piece.type === 'knight') {
+        const knightMoves = [
+            {x: x - 2, y: y - 1}, {x: x - 2, y: y + 1},
+            {x: x + 2, y: y - 1}, {x: x + 2, y: y + 1},
+            {x: x - 1, y: y - 2}, {x: x + 1, y: y - 2},
+            {x: x - 1, y: y + 2}, {x: x + 1, y: y + 2} 
+        ];
+        
+        knightMoves.forEach(move => {
+            // Check if move is within board bounds
+            if (move.x >= 0 && move.x < 8 && move.y >= 0 && move.y < 8) {
+                // Check if destination is empty or contains enemy piece
+                if (!boardLocal[move.y][move.x] || boardLocal[move.y][move.x].team !== piece.team) {
+                    validMoves.push(move);
+                }
+            }
+        });
+    }
     
     return validMoves;
 }
