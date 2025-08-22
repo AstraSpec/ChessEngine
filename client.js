@@ -342,6 +342,35 @@ function getValidMoves(piece) {
             }
         });
     }
+    if (piece.type === 'rook') {
+        const directions = [
+            {x: 0, y: -1}, {x: 0, y: 1},
+            {x: -1, y: 0}, {x: 1, y: 0} 
+        ];
+        
+        directions.forEach(dir => {
+            let newX = x + dir.x;
+            let newY = y + dir.y;
+            
+            // Keep moving in this direction until blocked
+            while (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
+                if (!boardLocal[newY][newX]) {
+                    // Empty square - can move here
+                    validMoves.push({x: newX, y: newY});
+                } else if (boardLocal[newY][newX].team !== piece.team) {
+                    // Enemy piece - can capture and stop
+                    validMoves.push({x: newX, y: newY});
+                    break;
+                } else {
+                    // Own piece - blocked, stop
+                    break;
+                }
+                
+                newX += dir.x;
+                newY += dir.y;
+            }
+        });
+    }
     
     return validMoves;
 }
