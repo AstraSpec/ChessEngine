@@ -404,7 +404,81 @@ function getValidMoves(piece) {
         });
     }
     
+    if (piece.type === 'king') {
+        const kingMoves = [
+            {x: x - 1, y: y - 1}, {x: x, y: y - 1}, {x: x + 1, y: y - 1},
+            {x: x - 1, y: y}, {x: x + 1, y: y},
+            {x: x - 1, y: y + 1}, {x: x, y: y + 1}, {x: x + 1, y: y + 1}
+        ];
+        
+        kingMoves.forEach(move => {
+            // Check if move is within board bounds
+            if (move.x >= 0 && move.x < 8 && move.y >= 0 && move.y < 8) {
+                // Check if destination is empty or contains enemy piece
+                if (!boardLocal[move.y][move.x] || boardLocal[move.y][move.x].team !== piece.team) {
+                    // Check if this square is under attack by any enemy piece
+                    if (!isSquareUnderAttack(move.x, move.y, piece.team)) {
+                        validMoves.push(move);
+                    }
+                }
+            }
+        });
+    }
+    
     return validMoves;
+}
+
+// Check if a square is under attack by any enemy piece
+function isSquareUnderAttack(x, y, defendingTeam) {
+    const attackingTeam = defendingTeam === 1 ? 2 : 1;
+    
+    // Check all squares on the board for enemy pieces
+    for (let checkY = 0; checkY < 8; checkY++) {
+        for (let checkX = 0; checkX < 8; checkX++) {
+            const piece = boardLocal[checkY][checkX];
+            
+            // If this is an enemy piece, check if it can attack the target square
+            if (piece && piece.team === attackingTeam) {
+                // Temporarily move the piece to the target square to check if it's a valid move
+                const originalPiece = boardLocal[y][x];
+                boardLocal[y][x] = piece;
+                
+                // Get all possible moves for this enemy piece
+                const enemyMoves = getValidMovesForPiece(piece, checkX, checkY);
+                
+                // Check if any of these moves can reach the target square
+                const canAttack = enemyMoves.some(move => move.x === x && move.y === y);
+                
+                // Restore the original board state
+                boardLocal[y][x] = originalPiece;
+                
+                if (canAttack) {
+                    return true; // Square is under attack
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+// Helper function to get valid moves for a piece at a specific position
+function getValidMovesForPiece(piece, pieceX, pieceY) {
+    const originalX = piece.x;
+    const originalY = piece.y;
+    
+    // Temporarily set the piece's position
+    piece.x = pieceX;
+    piece.y = pieceY;
+    
+    // Get valid moves
+    const moves = getValidMoves(piece);
+    
+    // Restore original position
+    piece.x = originalX;
+    piece.y = originalY;
+    
+    return moves;
 }
 
 function selectPiece(piece, square) {
